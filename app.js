@@ -30,6 +30,28 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+//Authorization
+
+function auth(erq, res, next) {
+  console.log(req.headers);
+
+  var authHeader = req.headers.authorization;
+
+  // client did not include username and password in header
+  if (!authHeader) {
+    var err = new Error('You are not authenticated!')
+    res.setHeader('WWW-Authenticate', 'Basic');
+    err.status = 401;
+    return next(err) 
+  }
+
+  //first split separates the base64 code into the word "basic" and the code, and the second split
+  //separates the username and password in the base64  code
+  var auth = new Buffer(authHeader.split(' ')[1], 'base64').toString().split(':')
+};
+app.use(auth);
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);
