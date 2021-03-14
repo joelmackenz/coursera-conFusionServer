@@ -33,7 +33,7 @@ app.use(cookieParser());
 
 //Authorization
 
-function auth(erq, res, next) {
+function auth(req, res, next) {
   console.log(req.headers);
 
   var authHeader = req.headers.authorization;
@@ -49,7 +49,22 @@ function auth(erq, res, next) {
   //first split separates the base64 code into the word "basic" and the code, and the second split
   //separates the username and password in the base64  code
   var auth = new Buffer(authHeader.split(' ')[1], 'base64').toString().split(':')
+
+  var username = auth[0];
+  var password = auth[1];
+
+  if (username === 'admin' && password === 'password') {
+    next();
+  }
+  else {
+    var err = new Error('You are not authenticated!')
+    res.setHeader('WWW-Authenticate', 'Basic');
+    err.status = 401;
+    return next(err) 
+  }
+
 };
+
 app.use(auth);
 
 app.use(express.static(path.join(__dirname, 'public')));
