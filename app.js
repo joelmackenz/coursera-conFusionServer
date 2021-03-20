@@ -13,6 +13,7 @@ var leaderRouter = require('./routes/leaderRouter');
 const mongoose = require('mongoose');
 
 const Dishes = require('./models/dishes');
+const e = require('express');
 
 const url = 'mongodb://localhost:27017/conFusion';
 const connect = mongoose.connect(url);
@@ -20,7 +21,7 @@ connect.then((db) => {
   console.log('Connected to server')
 }, (err) => { console.log(err)});
 
-var app = express();
+var app = express();;
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -29,12 +30,51 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser());
+app.use(cookieParser('12345-67890'));
 
 //Authorization
 
 function auth(req, res, next) {
-  console.log(req.headers);
+  console.log(req.signedCookies);
+
+  if (!req.signedCookies.user) {
+    var authHeader = req.headers.authorization;
+
+    // client did not include username and password in header
+    if (!authHeader) {
+      var err = new Error('You are not authenticated!')
+      res.setHeader('WWW-Authenticate', 'Basic');
+      err.status = 401;
+      return next(err) 
+    }
+  
+    //first split separates the base64 code into the word "basic" and the code, and the second split
+    //separates the username and password in the base64  code
+    var auth = new Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':')
+  
+    var username = auth[0];
+    var password = auth[1];
+  
+    if (username === 'admin' && password === 'password') {
+      res.cookie('user','admin', { signed: true })
+      next();
+    }
+    else {
+      var err = new Error('You are not authenticated!')
+      res.setHeader('WWW-Authenticate', 'Basic');
+      err.status = 401;
+      return next(err) 
+    }
+  }
+  else {
+    if (req.signedCookies.user === 'admin') {
+      next();
+    } else {
+      var err = new Error('You are not authenticated!')
+      err.status = 401;
+      return next(err) 
+    }
+  }
 
   var authHeader = req.headers.authorization;
 
@@ -48,7 +88,7 @@ function auth(req, res, next) {
 
   //first split separates the base64 code into the word "basic" and the code, and the second split
   //separates the username and password in the base64  code
-  var auth = new Buffer(authHeader.split(' ')[1], 'base64').toString().split(':')
+  var auth = new Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':')
 
   var username = auth[0];
   var password = auth[1];
