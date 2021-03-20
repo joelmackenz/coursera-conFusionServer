@@ -12,7 +12,7 @@ var dishRouter = require('./routes/dishRouter');
 var promoRouter = require('./routes/promoRouter');
 var leaderRouter = require('./routes/leaderRouter');
 
-const mongoose = require('mongoose');
+const mongoose = require('mongoose');;
 
 const Dishes = require('./models/dishes');
 const e = require('express');
